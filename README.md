@@ -1,16 +1,13 @@
 # lumatone_isomorphic_mappings
 Create .ltn files for isomorphic mappings for Lumatone
 
-Basically, here's how it'll work:
+# How to use
+Create a config (.yaml) file under the configs/ folder in this repository. Follow the syntax of the piano_layout.yaml file. Here's what each line in the file means:
 
-You tell it which midi value to center on, how big your scale is (how many steps), and how many steps you want to change by as you go 1 o'clock and 3 o'clock from any key.
+- `center` specifies which MIDI key to assign to the center of the keyboard. The "center" of the keyboard is defined as key 27 on board 2 (0-indexed).
+- `step_x` specifies how many MIDI steps to move up in the "x" direction, which is approximately 3'oclock from a bird's eye view. This can be set to a negative value to move down.
+- `step_x` specifies how many MIDI steps to move in the "y" direction, which is approximately 1'oclock from a bird's eye view.
+- `start_pitch_class` will define which pitch class (given by MIDI value) to start the coloring with. To start coloring at the center of the keyboard, set this the same as `center`
+- `colors` defines the color layout, and also the number of scale degrees that are implicit in the layout (which affects wrap-arounds for the MIDI value assignment). Starting at 0, define a color for each pitch class up to (number of scale degrees - 1). Make sure to indent each color line as in piano_layout.yaml
 
-For each scale step (starting at a value of your choice), you assign to it a color.
-
-The program computes and outputs a .ltn file with the isomorphic layout you've defined.
-
-For instance:
-
-scale_steps = 12, steps_up_right = 1, steps_right = 2, center = 65, color_start = 60 (middle C), color map = {0: white, 1: blue, 2: white, 3: blue, 4: white, 5: white, 6: blue, 7: white, 8: blue, 9: white, 10: blue, 11: white} will give you the default A_001 Bosanquet layout. You can easily recreate any of the other presets like this too.
-
-Whenever I have to collapse the octave, I increment / decrement the MIDI channel, so the idea is that hopefully this makes it easy to work with VSTs to get the full range if you so desire 
+To run this script, go to the terminal, cd to the repository folder, and type `python ltn_mapping_from_config.py --config (your config file) --output (your output file)` where (your config file) is the name (not path) of your config file, with suffix, and (your output file) is the desired name of your output .ltn file, without suffix. By default, the script will save to the Mappings/ folder under Documents/Lumatone Editor . If that isn't found, it will prompt you to enter the output location.
