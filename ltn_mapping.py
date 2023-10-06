@@ -1,4 +1,6 @@
 import numpy as np
+from ltn_mapping_colors import cnames
+
 # Defaults and constants
 CENTER_VALUE = 69
 CENTER_BOARD = 2
@@ -265,7 +267,7 @@ def assign_coloring_to_LTN(LTN_LAYOUT: np.ndarray,
     for Board in LTN_LAYOUT:
         for key in Board:
             value_mod_scale_size = key.MIDI_KEY % scale_size
-            key.color = regular_color_mapping[value_mod_scale_size]
+            key.color = cnames[regular_color_mapping[value_mod_scale_size]]
 
 def rgb_to_hex(red, green, blue):
     return '{:02X}{:02X}{:02X}'.format(red, green, blue).lower()
