@@ -25,7 +25,7 @@ from a bird's eye view)\n"""))
         pitch_class_color = input(f"Enter color (name) for MIDI values {pitch} +- multiples of {scale_steps}: ")
         
         # TODO: add vaidation to check that pitch_class_color in cnames.keys()
-        color_map[pitch % scale_steps] = cnames[pitch_class_color]
+        color_map[pitch % scale_steps] = pitch_class_color
     print(color_map)
 
     # Check if default path exists
@@ -68,5 +68,4 @@ in which to output your .ltn file.  """)
 
 if __name__ == "__main__":
     main()
-        
     

@@ -1,0 +1,17 @@
+center: 60
+step_x: 2
+step_y: 1
+start_pitch_class: 60
+colors:
+    0: magenta
+    1: blue
+    2: magenta
+    3: blue
+    4: magenta
+    5: magenta
+    6: blue
+    7: magenta
+    8: blue
+    9: magenta
+    10: blue
+    11: magenta
