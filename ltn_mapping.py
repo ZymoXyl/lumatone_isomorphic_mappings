@@ -9,7 +9,6 @@ LTN_BOARD_ROW_SIZES = [2, 5, 6, 6, 6, 6, 6, 6, 6, 5, 2]
 MIDI_MIN = 0
 MIDI_MAX = 127
 CENTER_CHANNEL = 5
-OUTPUT_PATH = f"/Users/ben/Downloads/test.ltn"
 STEPS_UP_RIGHT = 2
 STEPS_RIGHT = 1
 
@@ -18,21 +17,17 @@ LTN_BOARD_VALID_COORDINATES = []
 for row in range(len(LTN_BOARD_ROW_SIZES)):
     # Compute valid columns row by row
     valid_cols = []
-    # The special cases are rows 0, 1, 9, and 10
-    if row == 0:
-        valid_cols += [2 * i for i in range(2)]
-    elif row == 1:
-        valid_cols += [2 * i + 1 for i in range(5)]
-    elif row == 9:
-        valid_cols += [2 * i + 3 for i in range(5)]
+    # The special (offset) cases are rows 9 and 10
+    if row == 9:
+        valid_cols += [2 * i + 3 for i in range(LTN_BOARD_ROW_SIZES[row])]
     elif row == 10:
-        valid_cols += [2 * i + 8 for i in range(2)]
+        valid_cols += [2 * i + 8 for i in range(LTN_BOARD_ROW_SIZES[row])]
     else:
         # Row with 6 keys; if even start at 0 and count by 2, if odd start by 1 and count 2
         if row % 2 == 0:
-            valid_cols += [2 * i for i in range(6)]
+            valid_cols += [2 * i for i in range(LTN_BOARD_ROW_SIZES[row])]
         else:
-            valid_cols += [2 * i + 1 for i in range(6)]
+            valid_cols += [2 * i + 1 for i in range(LTN_BOARD_ROW_SIZES[row])]
     
     # Append coordinates
     LTN_BOARD_VALID_COORDINATES += [(row, col) for col in valid_cols]
@@ -161,18 +156,28 @@ class LTNKey:
                     neighbors[2] = (self.board + 1, np.cumsum(np.insert(LTN_BOARD_ROW_SIZES, 0, [0]))[self.position_row - 1])
 
         return neighbors
-    
-    # Going in the same order as LTNKey.neighbors()
-NEIGHBOR_STEP_ADJUSTMENTS = np.array([
-    STEPS_UP_RIGHT,
-    STEPS_RIGHT,
-    STEPS_RIGHT - STEPS_UP_RIGHT,
-    0 - STEPS_UP_RIGHT,
-    0 - STEPS_RIGHT,
-    STEPS_UP_RIGHT - STEPS_RIGHT
-])
+
+# Make necessary octave adjustments to keys that go under 0 or above 127 (want to switch channels as well)
+def collapse_to_MIDI_range(key: LTNKey, scale_steps: int):
+    """
+    Collapses a key's midi value to the range [0, 127], keeping the pitch class the same, by subtracting from the value.
+    With each subtraction of scale_steps, we add 1 to the MIDI channel so that we can set each channel to be one equave up
+    from the previous to get the full range. When we add to the midi value, we subtract 1 from the channel.
+
+    E.g. if scale_steps = 12
+    """
+    if key.MIDI_KEY > MIDI_MAX:
+        while key.MIDI_KEY > MIDI_MAX:
+            key.MIDI_KEY -= scale_steps
+            key.channel += 1
+    elif key.MIDI_KEY < MIDI_MIN:
+        while key.MIDI_KEY < MIDI_MIN:
+            key.MIDI_KEY += scale_steps
+            key.channel += 1
 
 def create_isomorphic_LTN_layout(
+    STEPS_UP_RIGHT: int = STEPS_UP_RIGHT,
+    STEPS_RIGHT: int = STEPS_RIGHT,
     SCALE_STEPS: int = SCALE_STEPS,
     CENTER_VALUE: int = CENTER_VALUE,
     CENTER_CHANNEL: int = CENTER_CHANNEL,
@@ -182,6 +187,16 @@ def create_isomorphic_LTN_layout(
     CENTER_BOARD: int = CENTER_BOARD,
     CENTER_POSITION: int = CENTER_POSITION
 ):
+    # Going in the same order as LTNKey.neighbors()
+    NEIGHBOR_STEP_ADJUSTMENTS = np.array([
+    STEPS_UP_RIGHT,
+    STEPS_RIGHT,
+    STEPS_RIGHT - STEPS_UP_RIGHT,
+    0 - STEPS_UP_RIGHT,
+    0 - STEPS_RIGHT,
+    STEPS_UP_RIGHT - STEPS_RIGHT
+    ])
+    
     # Initialize the LTN layout as 5 boards with 56 keys
     LTN = [[None for i in range(56)] for j in range(5)]
 
@@ -194,7 +209,11 @@ def create_isomorphic_LTN_layout(
     # Temporary boundary while handling a key's neighbors
     BOUND2 = []
 
-
+    """
+    FILO queue for populating the LTN keyboard. We start with our center key, whose value is given. As we add it to the keyboard,
+    we add its neighbor keys to BOUNDARY. We then pop the first key in BOUNDARY, and check if it has already been populated.
+    If not, we add populate it and add its neighbors to BOUNDARY. We continue in this way until BOUNDARY is empty.
+    """
     while(len(BOUNDARY) > 0):
         # Key whose boundary we're going to populate
         current_key = BOUNDARY.pop(0)
@@ -222,45 +241,45 @@ def create_isomorphic_LTN_layout(
         BOUNDARY += BOUND2
         # reset BOUND2
         BOUND2 = []
+    
+    # Collapse MIDI values
+    for board in LTN:
+        for key in board:
+            collapse_to_MIDI_range(key, SCALE_STEPS)
 
     return LTN
 
-# Make necessary octave adjustments to keys that go under 0 or above 127 (want to switch channels as well)
-def collapse_to_MIDI_range(key: LTNKey, scale_steps: int):
-    """
-    Collapses a key's midi value to the range [0, 127], keeping the pitch class the same, by subtracting from the value.
-    With each subtraction of scale_steps, we add 1 to the MIDI channel so that we can set each channel to be one equave up
-    from the previous to get the full range. When we add to the midi value, we subtract 1 from the channel.
-
-    E.g. if scale_steps = 12
-    """
-    if key.MIDI_KEY > MIDI_MAX:
-        while key.MIDI_KEY > MIDI_MAX:
-            key.MIDI_KEY -= scale_steps
-            key.channel += 1
-    elif key.MIDI_KEY < MIDI_MIN:
-        while key.MIDI_KEY < MIDI_MIN:
-            key.MIDI_KEY += scale_steps
-            key.channel += 1
-
 # Now we've got the midi values, let's assign color
-def assign_coloring_to_LTN(regular_color_mapping: dict, StartKey: int = CENTER_VALUE, scale_size: int = SCALE_STEPS):
+def assign_coloring_to_LTN(LTN_LAYOUT: np.ndarray,
+                           regular_color_mapping: dict,
+                           scale_size: int = SCALE_STEPS,
+                           ):
     """
     Takes in a dict of {int: hex_str} for int in range(SCALE_STEPS). StartKey will indicate which key gets the assignment
     of regular_color_mapping[0]
     """
 
-    assert list(regular_color_mapping.keys()) == list(range(scale_size))
-
-    offset = StartKey % scale_size
+    assert set(regular_color_mapping.keys()) == set(range(scale_size))
 
     # Iterate thru each key in LTN
-    for Board in LTN:
+    for Board in LTN_LAYOUT:
         for key in Board:
             value_mod_scale_size = key.MIDI_KEY % scale_size
-            # Offset so that StartKey gets mapped to regular_color_mapping[0]
-            offset_value_mod_scale_size = (value_mod_scale_size - offset) % scale_size
-            key.color = regular_color_mapping[offset_value_mod_scale_size]
+            key.color = regular_color_mapping[value_mod_scale_size]
 
 def rgb_to_hex(red, green, blue):
     return '{:02X}{:02X}{:02X}'.format(red, green, blue).lower()
+
+def create_ltn_file_text(LTN: np.ndarray):
+    # Create .ltn file
+
+    ltn_file = ""
+
+    for i in range(len(LTN)):
+        board = LTN[i]
+        ltn_file += f"[Board{i}]\n"
+        for k in board:
+            if k is not None:
+                ltn_file += f"Key_{k.position}={k.MIDI_KEY}\nChan_{k.position}={k.channel}\nCol_{k.position}={k.color}\n"
+    
+    return ltn_file
