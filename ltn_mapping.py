@@ -210,7 +210,7 @@ def create_isomorphic_LTN_layout(
     BOUND2 = []
 
     """
-    FILO queue for populating the LTN keyboard. We start with our center key, whose value is given. As we add it to the keyboard,
+    FIFO queue for populating the LTN keyboard. We start with our center key, whose value is given. As we add it to the keyboard,
     we add its neighbor keys to BOUNDARY. We then pop the first key in BOUNDARY, and check if it has already been populated.
     If not, we add populate it and add its neighbors to BOUNDARY. We continue in this way until BOUNDARY is empty.
     """
