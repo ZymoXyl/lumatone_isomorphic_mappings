@@ -254,7 +254,8 @@ def create_isomorphic_LTN_layout(
 # Now we've got the midi values, let's assign color
 def assign_coloring_to_LTN(LTN_LAYOUT: np.ndarray,
                            regular_color_mapping: dict,
-                           scale_size: int = SCALE_STEPS,
+                           scale_size: int,
+                           start_pitch: int
                            ):
     """
     Takes in a dict of {int: hex_str} for int in range(SCALE_STEPS). StartKey will indicate which key gets the assignment
@@ -263,11 +264,12 @@ def assign_coloring_to_LTN(LTN_LAYOUT: np.ndarray,
 
     assert set(regular_color_mapping.keys()) == set(range(scale_size))
 
+    offset = start_pitch % scale_size
     # Iterate thru each key in LTN
     for Board in LTN_LAYOUT:
         for key in Board:
             value_mod_scale_size = key.MIDI_KEY % scale_size
-            key.color = cnames[regular_color_mapping[value_mod_scale_size]]
+            key.color = cnames[regular_color_mapping[(value_mod_scale_size + offset) % scale_size]]
 
 def rgb_to_hex(red, green, blue):
     return '{:02X}{:02X}{:02X}'.format(red, green, blue).lower()

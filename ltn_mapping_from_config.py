@@ -13,7 +13,8 @@ def create_ltn_file(input_args: dict):
     # Apply color mapping to layout
     assign_coloring_to_LTN(LTN_layout,
                            input_args['colors'],
-                           len(input_args['colors'].keys()))
+                           len(input_args['colors'].keys()),
+                           input_args['start_pitch_class'])
 
     # Create ltn file text
     ltn_file_text = create_ltn_file_text(LTN_layout)
